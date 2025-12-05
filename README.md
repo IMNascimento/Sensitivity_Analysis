@@ -6,14 +6,13 @@
 
 ## Introdução
 
-[Nome do Projeto] é uma ferramenta [descreva a principal funcionalidade ou objetivo do projeto] que oferece [benefícios principais]. Desenvolvido como um projeto open source, nosso objetivo é [explicar o objetivo principal do projeto].
+Sensibility_Analysis é uma ferramenta que busca modelar o comportamento tensão x deformação de uma pilha de rejeitos por meio do modelo Hardening Soil, além de avaliar a sensibilidade dos parâmetros. Desenvolvido como um projeto open source, o objetivo é quantificar como as incertezas nos parâmetros do solo afetam as tensões e deformações do sistema.
 
 ## Funcionalidades
 
-- Funcionalidade 1
-- Funcionalidade 2
-- Funcionalidade 3
-- [Adicione outras funcionalidades importantes]
+- Quantificar incertezas nos parâmetros
+- Avaliar a confiabilidade do sistema
+- Fornecer curva tensão-deformação
 
 ## Pré-requisitos
 
@@ -72,8 +71,7 @@ Distribuído sob a licença MIT. Veja LICENSE para mais informações.
 
 ## Autores
 
-Seu Nome - Desenvolvedor Principal - Seu Perfil GitHub
+Bruna Martins - Desenvolvedora - https://github.com/brunamartinseesc
 
 ## Agradecimentos
-[Recursos ou bibliotecas que você usou]
-[Qualquer outra pessoa ou organização que você queira mencionar]
+Agradeço a contribuição fundamental do professor Igor Nascimento para o sucesso deste projeto.
