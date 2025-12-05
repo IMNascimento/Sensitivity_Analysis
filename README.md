@@ -19,10 +19,9 @@
 
 Antes de começar, certifique-se de ter as seguintes ferramentas instaladas:
 
-- [Linguagem/Framework] versão X.X.X
-- [Banco de Dados]
-- [Dependências principais]
-- [Outros requisitos]
+- [Python] versão 3.12
+- [Numpy] versão 2.3.5
+- [matplotlib] versão 3.10.7
 
 ## Instalação
 
@@ -30,12 +29,20 @@ Siga as etapas abaixo para configurar o projeto em sua máquina local:
 
 1. Clone o repositório:
     ```bash
-    git clone https://github.com/usuario/repo.git
+    git clone https://github.com/IMNascimento/Sensitivity_Analysis.git
     ```
 2. Navegue até o diretório do projeto:
     ```bash
-    cd nome-do-projeto
+    cd Sensitivity_Analysis
+    #instalação do modulo 
+    pip install -e .
     ```
+2. Instalação de modulo do projeto:
+    ```python
+    #instalação do modulo 
+    pip install -e .
+    ```
+
 3. Crie e ative o ambiente virtual:
     ```bash
     python -m venv venv
@@ -52,10 +59,10 @@ Siga as etapas abaixo para configurar o projeto em sua máquina local:
 Após a instalação, você pode iniciar a aplicação com o seguinte comando:
 
 ```bash
-python manage.py runserver
+streamlit run src/sensitivity_analysis/web/app.py
 ```
 
-Acesse o projeto em http://localhost:8000.
+Acesse o projeto em http://localhost:8501.
 
 ## Exemplos de Uso
 ```python
@@ -72,7 +79,7 @@ Distribuído sob a licença MIT. Veja LICENSE para mais informações.
 
 ## Autores
 
-Seu Nome - Desenvolvedor Principal - Seu Perfil GitHub
+Igor Nascimento - Desenvolvedor Principal - [github.com/IMNascimento](https://github.com/IMNascimento/)
 
 ## Agradecimentos
 [Recursos ou bibliotecas que você usou]
