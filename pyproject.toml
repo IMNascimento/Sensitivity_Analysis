@@ -1,0 +1,25 @@
+[project]
+name = "sensitivity-analysis"
+version = "0.1.0"
+description = "Ferramentas de análise de sensibilidade com Streamlit"
+authors = [
+  { name = "Igor nascimento", email = "trabalho.computador.sjn@gmail.com" },
+  { name = "Bruna martins", email = "brunamartins2100@gmail.com" }
+]
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "streamlit",
+  "numpy",
+  "matplotlib",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
