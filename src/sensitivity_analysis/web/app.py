@@ -11,9 +11,9 @@ from sensitivity_analysis.utils.calculadora import (
     MetodoConfiabilidade,
     RandomVariableConfig,
     ReliabilityConfig,
-    SoilInput,
     SoilReliabilityCalculator,
 )
+from sensitivity_analysis.interface.soil import SoilInput
 
 
 def main() -> None:

@@ -7,6 +7,9 @@ import math
 import numpy as np
 from numpy.typing import NDArray
 
+from sensitivity_analysis.interface.soil import SoilInput
+from sensitivity_analysis.interface.soil_result import SoilReliabilityResult
+
 # -------------------------------------------------------------------
 # Type aliases
 # -------------------------------------------------------------------
@@ -41,38 +44,6 @@ class RandomVariableConfig:
     correlacao: float | None = None
 
 
-@dataclass(slots=True)
-class SoilInput:
-    """Dados de entrada determinísticos do problema de solo."""
-
-    # Condições do solo
-    gama: float
-    e0: float
-    sigma0_eff: float  # tensão vertical efetiva inicial (kPa)
-
-    # Parâmetros de rigidez
-    E50_ref: float
-    Eoed_ref: float
-    Eur_ref: float
-    m: float
-    p_ref: float
-    nu: float
-
-    # Parâmetros de resistência
-    phi: float
-    c: float
-    psi: float
-
-    # Parâmetros de endurecimento
-    h0: float
-    alfa_h: float
-
-    # Carregamento atual
-    sigma_aplicado: float
-
-    # Função limite / deformação limite
-    g_func_text: str | None = None
-    epsilon_limite: float | None = None
 
 
 @dataclass(slots=True)
@@ -82,21 +53,6 @@ class ReliabilityConfig:
     metodo: MetodoConfiabilidade
     random_vars: dict[str, RandomVariableConfig] = field(default_factory=dict)
 
-
-@dataclass(slots=True)
-class SoilReliabilityResult:
-    """
-    Resultado simplificado da análise de confiabilidade.
-
-    Por enquanto é apenas um container de dados numéricos para a interface,
-    sem pretensão de rigor estatístico (PLACEHOLDER).
-    """
-
-    indice_confiabilidade: float
-    prob_falha: float
-    detalhes: str
-    epsilon: ArrayFloat
-    sigma: ArrayFloat
 
 
 # -------------------------------------------------------------------
