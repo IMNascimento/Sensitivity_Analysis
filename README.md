@@ -51,7 +51,7 @@ Siga as etapas abaixo para configurar o projeto em sua máquina local:
     #instalação do modulo 
     pip install -e .
     ```
-    
+
 ## Uso
 
 Após a instalação, você pode iniciar a aplicação com o seguinte comando:
@@ -77,7 +77,7 @@ Distribuído sob a licença MIT. Veja LICENSE para mais informações.
 
 ## Autores
 
-Igor Nascimento - Desenvolvedor Principal - [github.com/IMNascimento](https://github.com/IMNascimento/)
+Igor Nascimento - Desenvolvedor Principal - [github.com/IMNascimento](https://github.com/IMNascimento/)<br>
 Bruna Martins - Desenvolvedora - [github.com/brunamartinseesc](https://github.com/brunamartinseesc)
 
 ## Agradecimentos
