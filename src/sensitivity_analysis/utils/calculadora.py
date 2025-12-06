@@ -22,9 +22,7 @@ __all__ = [
     "DistribuicaoTipo",
     "MetodoConfiabilidade",
     "RandomVariableConfig",
-    "SoilInput",
     "ReliabilityConfig",
-    "SoilReliabilityResult",
     "SoilReliabilityCalculator",
 ]
 
