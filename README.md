@@ -33,13 +33,6 @@ Siga as etapas abaixo para configurar o projeto em sua máquina local:
 2. Navegue até o diretório do projeto:
     ```bash
     cd Sensitivity_Analysis
-    #instalação do modulo 
-    pip install -e .
-    ```
-2. Instalação de modulo do projeto:
-    ```python
-    #instalação do modulo 
-    pip install -e .
     ```
 
 3. Crie e ative o ambiente virtual:
@@ -53,6 +46,12 @@ Siga as etapas abaixo para configurar o projeto em sua máquina local:
     pip install -r requirements.txt
     ```
 
+5. Instalação de modulo do projeto:
+    ```python
+    #instalação do modulo 
+    pip install -e .
+    ```
+    
 ## Uso
 
 Após a instalação, você pode iniciar a aplicação com o seguinte comando:
