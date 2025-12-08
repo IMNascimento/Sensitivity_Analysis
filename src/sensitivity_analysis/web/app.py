@@ -20,7 +20,7 @@ def main() -> None:
     """Ponto de entrada do aplicativo Streamlit."""
     st.set_page_config(page_title="Lab de Cálculos", layout="wide")
 
-    st.title("🧪 Laboratório de Confiabilidade de Solos")
+    st.title(" Confiabilidade na Geotecnia ")
     st.write(
         (
             "Preencha os parâmetros do solo, escolha as variáveis aleatórias e o método "
