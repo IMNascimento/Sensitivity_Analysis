@@ -4,8 +4,9 @@ import grpc
 project = None
 
 try:
-    project = gsi.OpenProject(r"C:\caminho\para\seu_projeto.gsz")
+    project = gsi.OpenProject(r"C:\Users\bruna\Desktop\EESC-USP\26-1\Dissertação\teste.gsz")
 
+    print("Projeto aberto com sucesso")
     # chamadas da API aqui
 
 except grpc.RpcError as e:
