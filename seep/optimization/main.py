@@ -11,10 +11,6 @@ from aco import ACO
 
 
 def build_example_observed_data():
-    """
-    Substitua pelos seus dados observados reais.
-    Formato: [x, y, valor_observado]
-    """
     return np.array([
         [56.50, 59.12, 59.00],
         [63.70, 57.18, 59.39],
@@ -48,34 +44,18 @@ def save_results_markdown(output_path: Path, rows: list[dict], project_path: str
     lines.append(f"- Gerado em: `{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}`")
     lines.append("")
 
-    if not rows:
-        lines.append("Nenhum resultado gerado.")
-    else:
-        lines.append("## Resumo")
-        lines.append("")
-        lines.append("| Material | Melhor k | Melhor anisotropia | Melhor RMSE | Iteração | Status |")
-        lines.append("|---|---:|---:|---:|---:|---|")
-
-        for row in rows:
-            lines.append(
-                f"| {row['material']} | {row['melhor_k']} | {row['melhor_anisotropia']} | "
-                f"{row['melhor_rmse']} | {row['iteracao_melhor']} | {row['status']} |"
-            )
-
-        lines.append("")
-        lines.append("## Observações")
-        lines.append("")
-        lines.append("- O ACO foi executado individualmente para cada material.")
-        lines.append("- O resultado considera o melhor RMSE encontrado por material.")
-        lines.append("- Se `use_anisotropy=False`, a anisotropia fica fixa em `1.0`.")
+    lines.append("| Material | Melhor k | Melhor anisotropia | Melhor RMSE | Iteração | Status |")
+    lines.append("|---|---:|---:|---:|---:|---|")
+    for row in rows:
+        lines.append(
+            f"| {row['material']} | {row['melhor_k']} | {row['melhor_anisotropia']} | "
+            f"{row['melhor_rmse']} | {row['iteracao_melhor']} | {row['status']} |"
+        )
 
     output_path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def main():
-    # =========================
-    # CONFIGURAÇÕES GERAIS
-    # =========================
     project_path = r"C:\Users\bruna\Desktop\EESC-USP\26-1\Dissertação\teste.gsz"
     analysis_name = "Barragem Curuá-Una"
 
@@ -94,12 +74,9 @@ def main():
     csv_path = output_dir / "resultado_calibracao.csv"
     md_path = output_dir / "resultado_calibracao.md"
 
-    # =========================
-    # CONFIGURAÇÃO DO ACO
-    # =========================
     aco_cfg = ACOConfig(
         k_values=[2.5e-4, 3.0e-4, 3.2808398950131233e-4, 3.5e-4, 4.0e-4],
-        anisotropia_values=[1.0],  # ignorado se use_anisotropy=False
+        anisotropia_values=[1.0],
         n_ants=4,
         zeta=2.0,
         rho=0.3,
@@ -108,6 +85,26 @@ def main():
         penalty_rmse=1e12,
     )
 
+    # CONFIG BASE ÚNICA
+    seep_cfg = SeepProjectConfig(
+        project_path=project_path,
+        analysis_name=analysis_name,
+        material_object=build_material_object(materials_to_test[0]),
+        k_field_name="KSat",
+        anisotropy_field_name="KYXRatio",
+        use_anisotropy=False,
+        result_table="Nodes",
+        x_param="eXCoord",
+        y_param="eYCoord",
+        value_param="eWaterTotalHead",
+        step=1,
+        solve_dependencies=True,
+    )
+
+    # UM ÚNICO MODELO / UMA ÚNICA SESSÃO
+    modelo = SeepModel(seep_cfg)
+    modelo.open_project()
+
     results_rows = []
 
     for material_name in materials_to_test:
@@ -115,27 +112,12 @@ def main():
         print(f"INICIANDO MATERIAL: {material_name}")
         print("=" * 100)
 
-        seep_cfg = SeepProjectConfig(
-            project_path=project_path,
-            analysis_name=analysis_name,
-            material_object=build_material_object(material_name),
-            k_field_name="KSat",
-            anisotropy_field_name="KYXRatio",
-            use_anisotropy=False,   # mudar para True quando destravar anisotropia
-            result_table="Nodes",
-            x_param="eXCoord",
-            y_param="eYCoord",
-            value_param="eWaterTotalHead",
-            step=1,
-            solve_dependencies=True,
-        )
-
-        modelo = SeepModel(seep_cfg)
-        modelo.open_project()
+        # troca apenas o alvo
+        modelo.config.material_object = build_material_object(material_name)
 
         funcao_objetivo = RMSEObjectiveFunction(
             observed_data,
-            mode="exact",     # troque para "nearest" se quiser
+            mode="exact",
             tolerance=1e-2,
             debug=False,
         )
@@ -151,7 +133,7 @@ def main():
             print("\n" + "-" * 80)
             print("TESTE INICIAL - GET DO KSat")
             print("-" * 80)
-            modelo.inspect_object(seep_cfg.material_object + ".Hydraulic.KSat")
+            modelo.inspect_object(modelo.config.material_object + ".Hydraulic.KSat")
 
             print("\n" + "-" * 80)
             print("TESTE INICIAL - SET DO KSat")
@@ -185,7 +167,7 @@ def main():
                 max_iter=aco_cfg.max_iter,
                 tolerancia=aco_cfg.tolerancia,
                 penalty_rmse=aco_cfg.penalty_rmse,
-                debug=True,   # mude para False se quiser menos saída
+                debug=True,
             )
 
             resultado = aco.otimizar(modelo, funcao_objetivo)
@@ -206,11 +188,6 @@ def main():
             erro_msg = str(e)
             print(f"[ERRO] Material '{material_name}': {erro_msg}")
 
-        finally:
-            # se quiser fechar ao final de cada material
-            # modelo.close_project()
-            pass
-
         results_rows.append(
             {
                 "material": material_name,
@@ -223,9 +200,6 @@ def main():
             }
         )
 
-    # =========================
-    # EXPORTAÇÃO FINAL
-    # =========================
     save_results_csv(csv_path, results_rows)
     save_results_markdown(md_path, results_rows, project_path, analysis_name)
 
@@ -234,6 +208,9 @@ def main():
     print("=" * 100)
     print(f"CSV salvo em: {csv_path}")
     print(f"Markdown salvo em: {md_path}")
+
+    # opcional: tente só uma vez no fim
+    # modelo.close_project()
 
 
 if __name__ == "__main__":
