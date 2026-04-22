@@ -6,29 +6,22 @@ from typing import List, Optional
 class SeepProjectConfig:
     project_path: str
     analysis_name: str
-    material_object: str
 
-    # Campos do material dentro do GeoStudio.
-    # Ajuste conforme o retorno real do Get(...)
-    k_field_name: str = "K"
-    anisotropy_field_name: str = "AnisotropyRatio"
+    material_object: str = 'Materials["Tapete Permeável (Areia)"]'
 
-    # Tabela e parâmetros de resultado
+    k_field_name: str = "KSat"
+    anisotropy_field_name: str = "KYXRatio"
+
+    use_anisotropy: bool = False
+
     result_table: str = "Nodes"
-
-    # IMPORTANTE:
-    # ajuste para o DataParamType real que você quer comparar.
-    # Ex.: eWaterPressure, eHydraulicHead, etc.
     x_param: str = "eXCoord"
     y_param: str = "eYCoord"
-    value_param: str = "eWaterPressure"
+    value_param: str = "eWaterTotalHead"
 
-    # Passo/run/instance, se precisar
     step: int = 1
     run: Optional[int] = None
     instance: Optional[int] = None
-
-    # Se True, tenta resolver dependências também
     solve_dependencies: bool = True
 
 
