@@ -12,12 +12,13 @@ class ACO:
         max_iter=400,
         tolerancia=0.01,
         penalty_rmse=1e12,
+        debug=True,
     ):
-        self.k_values = k_values
-        self.anisotropia_values = anisotropia_values
+        self.k_values = list(k_values)
+        self.anisotropia_values = list(anisotropia_values)
 
-        self.n_k = len(k_values)
-        self.n_a = len(anisotropia_values)
+        self.n_k = len(self.k_values)
+        self.n_a = len(self.anisotropia_values)
 
         self.n_ants = n_ants
         self.zeta = zeta
@@ -25,12 +26,14 @@ class ACO:
         self.max_iter = max_iter
         self.tolerancia = tolerancia
         self.penalty_rmse = penalty_rmse
+        self.debug = debug
 
         self.feromonio = np.ones((self.n_k, self.n_a), dtype=float)
         self.cache = {}
 
     def otimizar(self, modelo, funcao_objetivo):
         historico_rmse = []
+        historico_iteracoes = []
 
         best_global_rmse = float("inf")
         best_global_params = None
@@ -48,6 +51,9 @@ class ACO:
 
                 k = self.k_values[i]
                 a = self.anisotropia_values[j]
+
+                if getattr(modelo.config, "use_anisotropy", True) is False:
+                    a = 1.0
 
                 cache_key = (float(k), float(a))
 
@@ -68,10 +74,11 @@ class ACO:
                 ant_results.append(rmse)
                 ant_indices.append((i, j))
 
-                print(
-                    f"Iter. {iteration} | Formiga {ant + 1}: "
-                    f"k={k}, anisotropia={a}, RMSE={rmse:.6f}, origem={source}"
-                )
+                if self.debug:
+                    print(
+                        f"Iter. {iteration} | Formiga {ant + 1}: "
+                        f"k={k}, anisotropia={a}, RMSE={rmse:.6f}, origem={source}"
+                    )
 
             best_idx = int(np.argmin(ant_results))
             best_rmse = float(ant_results[best_idx])
@@ -79,8 +86,18 @@ class ACO:
 
             best_k_iter = self.k_values[best_i]
             best_a_iter = self.anisotropia_values[best_j]
+            if getattr(modelo.config, "use_anisotropy", True) is False:
+                best_a_iter = 1.0
 
             historico_rmse.append(best_rmse)
+            historico_iteracoes.append(
+                {
+                    "iteracao": iteration,
+                    "melhor_rmse_iteracao": best_rmse,
+                    "melhor_k_iteracao": best_k_iter,
+                    "melhor_anisotropia_iteracao": best_a_iter,
+                }
+            )
 
             if best_rmse < best_global_rmse:
                 best_global_rmse = best_rmse
@@ -91,23 +108,24 @@ class ACO:
                     "iteration": iteration,
                 }
 
-            # evaporação
             self.feromonio *= (1 - self.rho)
 
-            # reforço no melhor da iteração
             bonus = self.zeta / (best_rmse + 1e-8)
             self.feromonio[best_i, best_j] += bonus
 
-            print(f"Melhor RMSE da iteração: {best_rmse:.6f}")
-            print(f"Melhor global até agora: {best_global_rmse:.6f}")
-            print("-" * 80)
+            if self.debug:
+                print(f"Melhor RMSE da iteração: {best_rmse:.6f}")
+                print(f"Melhor global até agora: {best_global_rmse:.6f}")
+                print("-" * 80)
 
             if best_rmse < self.tolerancia:
-                print(f"Convergiu na iteração {iteration}")
+                if self.debug:
+                    print(f"Convergiu na iteração {iteration}")
                 break
 
         return {
             "historico_rmse": historico_rmse,
+            "historico_iteracoes": historico_iteracoes,
             "melhor_global": best_global_params,
             "feromonio_final": self.feromonio.copy(),
             "cache": dict(self.cache),
