@@ -12,36 +12,40 @@ def build_example_observed_data():
     Formato: [x, y, valor_observado]
     """
     return np.array([
-        [0.0, 0.0, 12.4],
-        [1.0, 0.0, 12.1],
-        [2.0, 0.0, 11.8],
-        [3.0, 0.0, 11.5],
+        [56.50, 59.12, 59.00],
+        [63.70, 57.18, 59.39],
+        [78.00, 55.98, 57.73],
+        [89.00, 54.30, 57.01],
+        [102.50, 53.25, 54.77],
     ], dtype=float)
 
 
 def main():
-    # Ajustes estes valores Bruna de arcodo com seu projeto.
+    # =========================
+    # CONFIGURAÇÃO DO PROJETO
+    # =========================
     seep_cfg = SeepProjectConfig(
-        project_path=r"C:\Projetos\modelo_seep.gsz",
-        analysis_name="SEEP/W Analysis",
-        material_object="CurrentAnalysis.Materials.Material1",
-
-        # ESTES NOMES PRECISAM BATER COM O RETORNO REAL DO Get(...) não se esqueça bruna
-        k_field_name="K",
-        anisotropy_field_name="AnisotropyRatio",
-
-        # AJUSTE conforme a tabela e o resultado que você quer comparar
+        project_path=r"C:\Users\bruna\Desktop\EESC-USP\26-1\Dissertação\teste.gsz",
+        analysis_name="Barragem Curuá-Una",
+        material_object='Materials["Tapete Permeável (Areia)"]',
+        k_field_name="KSat",
+        anisotropy_field_name="KYXRatio",
+        use_anisotropy=False,   # anisotropia desabilitada por enquanto
         result_table="Nodes",
         x_param="eXCoord",
         y_param="eYCoord",
-        value_param="eWaterTotalHead", 
+        value_param="eWaterTotalHead",
         step=1,
         solve_dependencies=True,
     )
 
+    # =========================
+    # CONFIGURAÇÃO DO ACO
+    # =========================
     aco_cfg = ACOConfig(
-        k_values=[1e-8, 5e-8, 1e-7, 5e-7, 1e-6],
-        anisotropia_values=[0.5, 1.0, 2.0, 5.0, 10.0],
+        # Sugestão: começar perto do valor real atual do material
+        k_values=[2.5e-4, 3.0e-4, 3.2808398950131233e-4, 3.5e-4, 4.0e-4],
+        anisotropia_values=[1.0],  # ignorado enquanto use_anisotropy=False
         n_ants=4,
         zeta=2.0,
         rho=0.3,
@@ -51,37 +55,65 @@ def main():
     )
 
     modelo = SeepModel(seep_cfg)
+    modelo.open_project()
 
-    print("=" * 80)
-    print("1) INSPECIONANDO MATERIAL")
-    print("=" * 80)
-    try:
-        material_info = modelo.inspect_material()
-        print(material_info)
-    except Exception as e:
-        print(f"Falha ao inspecionar material: {e}")
-
+    # =========================
+    # TESTE 1 - LEITURA DO CAMPO
+    # =========================
     print("\n" + "=" * 80)
-    print("2) LISTANDO PARÂMETROS DE RESULTADO DISPONÍVEIS")
+    print("TESTE 1 - GET DO KSat")
     print("=" * 80)
-    try:
-        params = modelo.list_available_result_params()
-        for item in params[:20]:
-            print(item)
-        if len(params) > 20:
-            print(f"... total de parâmetros encontrados: {len(params)}")
-    except Exception as e:
-        print(f"Falha ao listar parâmetros: {e}")
+    modelo.inspect_object(seep_cfg.material_object + ".Hydraulic.KSat")
 
+    # =========================
+    # TESTE 2 - ESCRITA DO CAMPO
+    # =========================
     print("\n" + "=" * 80)
-    print("3) PREPARANDO FUNÇÃO OBJETIVO")
+    print("TESTE 2 - SET APENAS DO KSat")
+    print("=" * 80)
+    modelo.debug_test_set_individual_fields(
+        k=3.2808398950131233e-4,
+        anisotropia=1.0,
+    )
+
+    # =========================
+    # TESTE 3 - EXECUÇÃO ÚNICA
+    # =========================
+    print("\n" + "=" * 80)
+    print("TESTE 3 - EXECUÇÃO ÚNICA")
+    print("=" * 80)
+    resultado_teste = modelo.debug_single_run(
+        k=3.2808398950131233e-4,
+        anisotropia=1.0,
+    )
+    print("[DEBUG] Primeiras 10 linhas do modelo:")
+    print(resultado_teste[:10])
+
+    # =========================
+    # FUNÇÃO OBJETIVO
+    # =========================
+    print("\n" + "=" * 80)
+    print("TESTE 4 - FUNÇÃO OBJETIVO")
     print("=" * 80)
     observed_data = build_example_observed_data()
-    funcao_objetivo = RMSEObjectiveFunction(observed_data)
 
+    funcao_objetivo = RMSEObjectiveFunction(
+        observed_data,
+        mode="exact",
+        tolerance=1e-2,   # ajuste se precisar
+        debug=True,
+    )
+
+    rmse_teste = funcao_objetivo.calcular_rmse(resultado_teste)
+    print(f"[DEBUG] RMSE exact: {rmse_teste:.6f}")
+
+    # =========================
+    # ACO
+    # =========================
     print("\n" + "=" * 80)
-    print("4) EXECUTANDO ACO")
+    print("TESTE 5 - EXECUTANDO ACO")
     print("=" * 80)
+
     aco = ACO(
         k_values=aco_cfg.k_values,
         anisotropia_values=aco_cfg.anisotropia_values,
@@ -95,8 +127,11 @@ def main():
 
     resultado = aco.otimizar(modelo, funcao_objetivo)
 
+    # =========================
+    # RESULTADO FINAL
+    # =========================
     print("\n" + "=" * 80)
-    print("5) RESULTADO FINAL")
+    print("RESULTADO FINAL")
     print("=" * 80)
     print("Melhor solução global:")
     print(resultado["melhor_global"])
