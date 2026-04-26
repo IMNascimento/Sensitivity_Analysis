@@ -11,6 +11,10 @@ from aco import ACO
 
 
 def build_example_observed_data():
+    """
+    Substitua pelos seus dados observados reais.
+    Formato: [x, y, valor_observado]
+    """
     return np.array([
         [56.50, 59.12, 59.00],
         [63.70, 57.18, 59.39],
@@ -35,7 +39,12 @@ def save_results_csv(output_path: Path, rows: list[dict]) -> None:
         writer.writerows(rows)
 
 
-def save_results_markdown(output_path: Path, rows: list[dict], project_path: str, analysis_name: str) -> None:
+def save_results_markdown(
+    output_path: Path,
+    rows: list[dict],
+    project_path: str,
+    analysis_name: str,
+) -> None:
     lines = []
     lines.append("# Resultado da calibração por material")
     lines.append("")
@@ -47,22 +56,22 @@ def save_results_markdown(output_path: Path, rows: list[dict], project_path: str
     if rows:
         lines.append("## Resumo")
         lines.append("")
-        lines.append("| Material | k testados | Melhor k | Melhor anisotropia | Melhor RMSE | Iteração | Status |")
-        lines.append("|---|---|---:|---:|---:|---:|---|")
+        lines.append("| Material | k testados | anisotropias testadas | Melhor k | Melhor anisotropia | Melhor RMSE | Iteração | Status |")
+        lines.append("|---|---|---|---:|---:|---:|---:|---|")
 
         for row in rows:
             lines.append(
-                f"| {row['material']} | {row['k_values']} | {row['melhor_k']} | "
-                f"{row['melhor_anisotropia']} | {row['melhor_rmse']} | "
-                f"{row['iteracao_melhor']} | {row['status']} |"
+                f"| {row['material']} | {row['k_values']} | {row['anisotropia_values']} | "
+                f"{row['melhor_k']} | {row['melhor_anisotropia']} | "
+                f"{row['melhor_rmse']} | {row['iteracao_melhor']} | {row['status']} |"
             )
 
         lines.append("")
         lines.append("## Observações")
         lines.append("")
-        lines.append("- Cada material foi calibrado com uma configuração de ACO própria.")
+        lines.append("- Cada material foi calibrado com uma configuração própria de ACO.")
         lines.append("- A sessão do projeto foi mantida aberta durante a execução.")
-        lines.append("- A anisotropia ficou fixa quando `use_anisotropy=False`.")
+        lines.append("- A anisotropia foi ativada e agora faz parte do espaço de busca.")
     else:
         lines.append("Nenhum resultado foi gerado.")
 
@@ -81,16 +90,17 @@ def main():
     csv_path = output_dir / "resultado_calibracao.csv"
     md_path = output_dir / "resultado_calibracao.md"
 
-    # =========================
+    # ============================================================
     # UM JOB COMPLETO POR MATERIAL
     # CADA MATERIAL TEM SEU PRÓPRIO ACO
-    # =========================
+    # AGORA COM ANISOTROPIA ATIVA
+    # ============================================================
     material_jobs = [
         {
             "material_name": "Tapete Permeável (Areia)",
             "aco_cfg": ACOConfig(
                 k_values=[2.5e-4, 3.0e-4, 3.2808398950131233e-4, 3.5e-4, 4.0e-4],
-                anisotropia_values=[1.0],
+                anisotropia_values=[0.5, 1.0, 2.0, 5.0],
                 n_ants=4,
                 zeta=2.0,
                 rho=0.3,
@@ -103,7 +113,7 @@ def main():
             "material_name": "Dreno Vertical (Areia)",
             "aco_cfg": ACOConfig(
                 k_values=[2.0e-4, 2.5e-4, 3.0e-4, 3.5e-4, 4.5e-4],
-                anisotropia_values=[1.0],
+                anisotropia_values=[0.5, 1.0, 2.0, 5.0],
                 n_ants=5,
                 zeta=2.0,
                 rho=0.25,
@@ -116,7 +126,7 @@ def main():
             "material_name": "Dreno Horizontal (Areia)",
             "aco_cfg": ACOConfig(
                 k_values=[1.5e-4, 2.0e-4, 2.5e-4, 3.0e-4, 3.5e-4],
-                anisotropia_values=[1.0],
+                anisotropia_values=[0.5, 1.0, 2.0, 5.0],
                 n_ants=4,
                 zeta=2.0,
                 rho=0.3,
@@ -129,7 +139,7 @@ def main():
             "material_name": "Fundação Permeável (Areia)",
             "aco_cfg": ACOConfig(
                 k_values=[8.0e-5, 1.0e-4, 1.2e-4, 1.3123359580052493e-4, 1.5e-4],
-                anisotropia_values=[1.0],
+                anisotropia_values=[0.5, 1.0, 2.0, 5.0],
                 n_ants=4,
                 zeta=2.0,
                 rho=0.3,
@@ -140,16 +150,16 @@ def main():
         },
     ]
 
-    # =========================
+    # ============================================================
     # CONFIG BASE DO PROJETO
-    # =========================
+    # ============================================================
     seep_cfg = SeepProjectConfig(
         project_path=project_path,
         analysis_name=analysis_name,
         material_object=build_material_object(material_jobs[0]["material_name"]),
         k_field_name="KSat",
         anisotropy_field_name="KYXRatio",
-        use_anisotropy=False,
+        use_anisotropy=True,   # <- AGORA ATIVADO
         result_table="Nodes",
         x_param="eXCoord",
         y_param="eYCoord",
@@ -188,25 +198,33 @@ def main():
         erro_msg = ""
 
         try:
+            k_inicial = aco_cfg.k_values[min(2, len(aco_cfg.k_values) - 1)]
+            anisotropia_inicial = aco_cfg.anisotropia_values[min(1, len(aco_cfg.anisotropia_values) - 1)]
+
             print("\n" + "-" * 80)
             print("TESTE INICIAL - GET DO KSat")
             print("-" * 80)
             modelo.inspect_object(modelo.config.material_object + ".Hydraulic.KSat")
 
             print("\n" + "-" * 80)
-            print("TESTE INICIAL - SET DO KSat")
+            print("TESTE INICIAL - GET DO RATIO")
+            print("-" * 80)
+            modelo.inspect_object(modelo.config.material_object + ".Hydraulic." + modelo.config.anisotropy_field_name)
+
+            print("\n" + "-" * 80)
+            print("TESTE INICIAL - SET DO KSat E RATIO")
             print("-" * 80)
             modelo.debug_test_set_individual_fields(
-                k=aco_cfg.k_values[min(2, len(aco_cfg.k_values) - 1)],
-                anisotropia=1.0,
+                k=k_inicial,
+                anisotropia=anisotropia_inicial,
             )
 
             print("\n" + "-" * 80)
             print("TESTE INICIAL - EXECUÇÃO ÚNICA")
             print("-" * 80)
             resultado_teste = modelo.debug_single_run(
-                k=aco_cfg.k_values[min(2, len(aco_cfg.k_values) - 1)],
-                anisotropia=1.0,
+                k=k_inicial,
+                anisotropia=anisotropia_inicial,
             )
 
             rmse_teste = funcao_objetivo.calcular_rmse(resultado_teste)
@@ -216,7 +234,6 @@ def main():
             print("EXECUTANDO ACO")
             print("-" * 80)
 
-            # NOVO ACO PARA ESSE MATERIAL
             aco = ACO(
                 k_values=aco_cfg.k_values,
                 anisotropia_values=aco_cfg.anisotropia_values,
@@ -251,6 +268,7 @@ def main():
             {
                 "material": material_name,
                 "k_values": str(aco_cfg.k_values),
+                "anisotropia_values": str(aco_cfg.anisotropia_values),
                 "melhor_k": melhor_k,
                 "melhor_anisotropia": melhor_anisotropia,
                 "melhor_rmse": melhor_rmse,
