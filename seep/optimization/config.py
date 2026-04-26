@@ -180,3 +180,93 @@ class ACOConfig:
     max_iter: int = 50
     tolerancia: float = 0.01
     penalty_rmse: float = 1e12
+
+@dataclass
+class MaterialCalibrationConfig:
+    """
+    Configuração de calibração de um material individual.
+
+    Attributes:
+        material_name:
+            Nome do material no GeoStudio.
+
+        material_object:
+            Caminho completo do objeto do material.
+
+        k_field_name:
+            Nome do campo de condutividade.
+
+        anisotropy_field_name:
+            Nome do campo de anisotropia.
+
+        k_values:
+            Lista discreta de valores de k a testar.
+
+        anisotropia_values:
+            Lista discreta de valores de anisotropia a testar.
+        """
+    material_name: str
+    material_object: str
+    k_field_name: str = "KSat"
+    anisotropy_field_name: str = "KYXRatio"
+    k_values: List[float] = field(default_factory=list)
+    anisotropia_values: List[float] = field(default_factory=list)
+
+
+@dataclass
+class MultiMaterialSeepConfig:
+    """
+    Configuração do projeto SEEP para calibração conjunta de múltiplos materiais.
+
+    Attributes:
+        project_path:
+            Caminho do arquivo .gsz.
+
+        analysis_name:
+            Nome da análise.
+
+        materials:
+            Lista de materiais que participarão da calibração conjunta.
+
+        use_anisotropy:
+            Se True, a anisotropia de cada material também será calibrada.
+
+        result_table:
+            Tabela de resultados a consultar.
+
+        x_param:
+            Parâmetro de coordenada X.
+
+        y_param:
+            Parâmetro de coordenada Y.
+
+        value_param:
+            Variável de interesse.
+
+        step:
+            Step da análise.
+
+        run:
+            Run opcional da análise.
+
+        instance:
+            Instance opcional da análise.
+
+        solve_dependencies:
+            Se True, resolve dependências da análise.
+    """
+    project_path: str
+    analysis_name: str
+    materials: List[MaterialCalibrationConfig]
+
+    use_anisotropy: bool = True
+
+    result_table: str = "Nodes"
+    x_param: str = "eXCoord"
+    y_param: str = "eYCoord"
+    value_param: str = "eWaterTotalHead"
+
+    step: int = 1
+    run: Optional[int] = None
+    instance: Optional[int] = None
+    solve_dependencies: bool = True
