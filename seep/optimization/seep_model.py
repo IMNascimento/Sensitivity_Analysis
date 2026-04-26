@@ -331,6 +331,108 @@ class SeepModel:
             a_path = self.config.material_object + ".Hydraulic." + self.config.anisotropy_field_name
             self._set_single_number_field(a_path, float(anisotropia))
 
+    def _set_material_params_for_object(
+        self,
+        material_object: str,
+        k_field_name: str,
+        anisotropy_field_name: str,
+        k: float,
+        anisotropia: float,
+    ) -> None:
+        """
+        Atualiza os parâmetros hidráulicos de um material específico.
+
+        Regras:
+        - KSat: escrito como struct {Value, Units}
+        - anisotropia: escrita como number_value puro
+
+        Args:
+            material_object:
+                Caminho do material no GeoStudio.
+
+            k_field_name:
+                Nome do campo de k.
+
+            anisotropy_field_name:
+                Nome do campo de anisotropia.
+
+            k:
+                Valor de k.
+
+            anisotropia:
+                Valor de anisotropia.
+        """
+        self._require_project()
+
+        # KSat
+        k_path = material_object + ".Hydraulic." + k_field_name
+        k_current = self.project.Get(
+            gsi.GetRequest(
+                analysis=self.config.analysis_name,
+                object=k_path,
+            )
+        )
+        k_data = json_format.MessageToDict(k_current)["data"]
+
+        self._set_single_struct_field(
+            k_path,
+            {
+                "Value": float(k),
+                "Units": k_data["Units"],
+            }
+        )
+
+        # anisotropia
+        if getattr(self.config, "use_anisotropy", True):
+            a_path = material_object + ".Hydraulic." + anisotropy_field_name
+            self._set_single_number_field(a_path, float(anisotropia))
+
+
+    def run_multi(self, material_params: dict) -> np.ndarray:
+        """
+        Executa uma simulação conjunta alterando múltiplos materiais antes do solve.
+
+        Args:
+            material_params:
+                Dicionário no formato:
+                {
+                    "Nome Material A": {
+                        "material_object": "...",
+                        "k_field_name": "KSat",
+                        "anisotropy_field_name": "KYXRatio",
+                        "k": 1e-4,
+                        "anisotropia": 2.0,
+                    },
+                    ...
+                }
+
+        Returns:
+            np.ndarray:
+                Array com shape (n, 3) no formato [x, y, valor_modelado].
+        """
+        try:
+            self.open_project()
+
+            for _, params in material_params.items():
+                self._set_material_params_for_object(
+                    material_object=params["material_object"],
+                    k_field_name=params["k_field_name"],
+                    anisotropy_field_name=params["anisotropy_field_name"],
+                    k=params["k"],
+                    anisotropia=params["anisotropia"],
+                )
+
+            self._solve()
+            self._load_results()
+            self._assert_results_available()
+
+            return self._query_results()
+
+        except grpc.RpcError as e:
+            raise RuntimeError(f"Erro gRPC no GeoStudio: {e.code()} - {e.details()}") from e
+        except Exception as e:
+            raise RuntimeError(f"Erro ao executar modelo SEEP multi-material: {e}") from e
+
     # ============================================================
     # Execução do modelo
     # ============================================================
