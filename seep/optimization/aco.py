@@ -291,11 +291,18 @@ class ACO:
             if getattr(modelo.config, "use_anisotropy", True) is False:
                 best_a_iter = 1.0
 
+            _validos = [r for r in ant_results if r < self.penalty_rmse]
+            _f_pior = float(max(_validos)) if _validos else best_rmse
+            _f_media = float(np.mean(_validos)) if _validos else best_rmse
+
             historico_rmse.append(best_rmse)
             historico_iteracoes.append(
                 {
                     "iteracao": iteration,
                     "melhor_rmse_iteracao": best_rmse,
+                    "rmse_melhor": best_rmse,
+                    "rmse_media": _f_media,
+                    "rmse_pior": _f_pior,
                     "melhor_k_iteracao": best_k_iter,
                     "melhor_anisotropia_iteracao": best_a_iter,
                 }
