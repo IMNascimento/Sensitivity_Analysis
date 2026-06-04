@@ -194,7 +194,9 @@ class MultiMaterialACOv2:
                         source = "cache"
                     else:
                         h = modelo.run_multi(material_params)
-                        rmse = funcao_objetivo.calcular_rmse(h)
+                        rmse = (funcao_objetivo.calcular(h)
+                                if hasattr(funcao_objetivo, "calcular")
+                                else funcao_objetivo.calcular_rmse(h))
                         self.cache[cache_key] = rmse
                         source = "run"
                 except Exception as e:
