@@ -120,11 +120,18 @@ class MultiMaterialACO:
             best_rmse = float(ant_results[best_idx])
             best_params_iter = ant_param_sets[best_idx]
 
+            _validos = [r for r in ant_results if r < self.penalty_rmse]
+            _f_pior = float(max(_validos)) if _validos else best_rmse
+            _f_media = float(np.mean(_validos)) if _validos else best_rmse
+
             historico_rmse.append(best_rmse)
             historico_iteracoes.append(
                 {
                     "iteracao": iteration,
                     "melhor_rmse_iteracao": best_rmse,
+                    "rmse_melhor": best_rmse,
+                    "rmse_media": _f_media,
+                    "rmse_pior": _f_pior,
                     "melhor_parametros_iteracao": {
                         name: {
                             "k": params["k"],
