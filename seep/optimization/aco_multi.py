@@ -147,9 +147,28 @@ class MultiMaterialACO:
             best_idx = int(np.argmin(ant_results))
             best_rmse = float(ant_results[best_idx])
             best_params_iter = ant_param_sets[best_idx]
-            historico_rmse.append(best_rmse)
 
-            # Atualiza melhor global
+            _validos = [r for r in ant_results if r < self.penalty_rmse]
+            _f_pior = float(max(_validos)) if _validos else best_rmse
+            _f_media = float(np.mean(_validos)) if _validos else best_rmse
+
+            historico_rmse.append(best_rmse)
+            historico_iteracoes.append(
+                {
+                    "iteracao": iteration,
+                    "melhor_rmse_iteracao": best_rmse,
+                    "rmse_melhor": best_rmse,
+                    "rmse_media": _f_media,
+                    "rmse_pior": _f_pior,
+                    "melhor_parametros_iteracao": {
+                        name: {
+                            "k": params["k"],
+                            "anisotropia": params["anisotropia"],
+                        }
+                        for name, params in best_params_iter.items()
+                    },
+                }
+            )
 
             if best_rmse < best_global_rmse:
                 best_global_rmse = best_rmse
