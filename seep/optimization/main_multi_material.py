@@ -13,10 +13,10 @@ from aco_multi import MultiMaterialACO
 def build_example_observed_data():
     return np.array([
         [56.499999, 59.119999, 61.47],
-        [63.70, 57.18, 58.71],
-        [78.00, 55.98, 57.15],
-        [89.00, 54.30, 56.29],
-        [102.50, 53.25, 54.31],
+        [63.70, 57.180001, 58.71],
+        [77.999999, 55.980001, 57.15],
+        [89.00, 54.300001, 56.29],
+        [102.50, 53.249999, 54.31],
     ], dtype=float)
 
 
@@ -132,7 +132,7 @@ def build_best_material_params(best_materials: dict, materials: list[MaterialCal
 
 
 def main():
-    project_path = r"C:\Users\bruna\Desktop\EESC-USP\26-1\Dissertacao\teste.gsz"
+    project_path = r"C:\Users\bruna\Desktop\EESC-USP\26-1\Dissertacao\teste1.gsz"
     analysis_name = "Barragem Curuá-Una"
 
     observed_data = build_example_observed_data()
@@ -147,36 +147,44 @@ def main():
 
     materials = [
         MaterialCalibrationConfig(
-            material_name="Tapete Permeável (Areia)",
-            material_object=build_material_object("Tapete Permeável (Areia)"),
+            material_name="Aba Jusante (Areia Silto Argilosa)",
+            material_object=build_material_object("Aba Jusante (Areia Silto Argilosa)"),
             k_field_name="KSat",
             anisotropy_field_name="KYXRatio",
-            k_values=[2.5e-4, 3.0e-4, 3.2808398950131233e-4, 3.5e-4, 4.0e-4],
-            anisotropia_values=[0.5, 1.0, 2.0, 5.0],
+            k_values=[9.0e-8, 3.0e-8, 5.0e-8, 3.0e-9, 5.5e-9, 9.0e-9],
+            anisotropia_values=[0.2, 1.0, 0.5, 0.4],
         ),
         MaterialCalibrationConfig(
-            material_name="Dreno Vertical (Areia)",
-            material_object=build_material_object("Dreno Vertical (Areia)"),
+            material_name="Núcleo (Argila Compactada)",
+            material_object=build_material_object("Núcleo (Argila Compactada)"),
             k_field_name="KSat",
             anisotropy_field_name="KYXRatio",
-            k_values=[2.0e-4, 2.5e-4, 3.0e-4, 3.5e-4, 4.5e-4],
-            anisotropia_values=[0.5, 1.0, 2.0, 5.0],
+            k_values=[9.0e-9, 5.5e-9, 3.5e-9, 5.0e-10, 8.5e-10, 9.0e-10],
+            anisotropia_values=[0.2, 0.4, 0.8, 0.6],
         ),
         MaterialCalibrationConfig(
             material_name="Dreno Horizontal (Areia)",
             material_object=build_material_object("Dreno Horizontal (Areia)"),
             k_field_name="KSat",
             anisotropy_field_name="KYXRatio",
-            k_values=[1.5e-4, 2.0e-4, 2.5e-4, 3.0e-4, 3.5e-4],
-            anisotropia_values=[0.5, 1.0, 2.0, 5.0],
+            k_values=[1.0e-4, 3.5e-4, 4.5e-4, 1.2e-4, 2.2e-4, 5.2e-4],
+            anisotropia_values=[0.2, 0.4, 0.5, 1.0],
         ),
         MaterialCalibrationConfig(
             material_name="Fundação Permeável (Areia)",
             material_object=build_material_object("Fundação Permeável (Areia)"),
             k_field_name="KSat",
             anisotropy_field_name="KYXRatio",
-            k_values=[8.0e-5, 1.0e-4, 1.2e-4, 1.3123359580052493e-4, 1.5e-4],
-            anisotropia_values=[0.5, 1.0, 2.0, 5.0],
+            k_values=[4.0e-5, 2.0e-5, 5.0e-5, 1.5e-6, 3.0e-6, 6.0e-6],
+            anisotropia_values=[0.2, 1.0, 0.8, 0.6],
+        ),
+        MaterialCalibrationConfig(
+            material_name="Camada Impermeável",
+            material_object=build_material_object("Camada Impermeável"),
+            k_field_name="KSat",
+            anisotropy_field_name="KYXRatio",
+            k_values=[1.0e-12, 1.2e-12, 1.5e-12, 2.0e-12, 1.8e-12, 0.9e-12],
+            anisotropia_values=[0.2, 1.0, 0.9, 0.4],
         ),
     ]
 
@@ -205,10 +213,11 @@ def main():
 
     aco = MultiMaterialACO(
         material_configs=materials,
-        n_ants=4,
-        zeta=2.0,
-        rho=0.3,
-        max_iter=3,
+        n_ants=10,
+        alpha=1.2,
+        zeta=1.0,
+        rho=0.2,
+        max_iter=50,
         tolerancia=0.01,
         penalty_rmse=1e12,
         debug=True,
