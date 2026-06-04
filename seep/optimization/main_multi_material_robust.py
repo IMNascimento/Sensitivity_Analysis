@@ -14,16 +14,16 @@ from pathlib import Path
 
 import numpy as np
 
-from config import MultiMaterialSeepConfig, MaterialCalibrationConfig
+from config import MultiMaterialSeepConfig
 from seep_model import SeepModel
 from objective_function import RMSEObjectiveFunction
 from aco_multi_robust import MultiMaterialACORobust
 from convergence_plot import plot_convergencia
+from barragem_materials import build_barragem_materials
 
 # Reaproveita os utilitários já existentes do main original.
 from main_multi_material import (
     build_example_observed_data,
-    build_material_object,
     build_best_material_params,
     save_results_csv,
     save_results_markdown,
@@ -47,48 +47,8 @@ def main():
     sampled_points_csv_path = output_dir / "resultado_pontos_amostrados.csv"
     plot_path = output_dir / "convergencia.png"
 
-    materials = [
-        MaterialCalibrationConfig(
-            material_name="Aba Jusante (Areia Silto Argilosa)",
-            material_object=build_material_object("Aba Jusante (Areia Silto Argilosa)"),
-            k_field_name="KSat",
-            anisotropy_field_name="KYXRatio",
-            k_values=[9.0e-8, 3.0e-8, 5.0e-8, 3.0e-9, 5.5e-9, 9.0e-9],
-            anisotropia_values=[0.2, 1.0, 0.5, 0.4],
-        ),
-        MaterialCalibrationConfig(
-            material_name="Núcleo (Argila Compactada)",
-            material_object=build_material_object("Núcleo (Argila Compactada)"),
-            k_field_name="KSat",
-            anisotropy_field_name="KYXRatio",
-            k_values=[9.0e-9, 5.5e-9, 3.5e-9, 5.0e-10, 8.5e-10, 9.0e-10],
-            anisotropia_values=[0.2, 0.4, 0.8, 0.6],
-        ),
-        MaterialCalibrationConfig(
-            material_name="Dreno Horizontal (Areia)",
-            material_object=build_material_object("Dreno Horizontal (Areia)"),
-            k_field_name="KSat",
-            anisotropy_field_name="KYXRatio",
-            k_values=[1.0e-4, 3.5e-4, 4.5e-4, 1.2e-4, 2.2e-4, 5.2e-4],
-            anisotropia_values=[0.2, 0.4, 0.5, 1.0],
-        ),
-        MaterialCalibrationConfig(
-            material_name="Fundação Permeável (Areia)",
-            material_object=build_material_object("Fundação Permeável (Areia)"),
-            k_field_name="KSat",
-            anisotropy_field_name="KYXRatio",
-            k_values=[4.0e-5, 2.0e-5, 5.0e-5, 1.5e-6, 3.0e-6, 6.0e-6],
-            anisotropia_values=[0.2, 1.0, 0.8, 0.6],
-        ),
-        MaterialCalibrationConfig(
-            material_name="Camada Impermeável",
-            material_object=build_material_object("Camada Impermeável"),
-            k_field_name="KSat",
-            anisotropy_field_name="KYXRatio",
-            k_values=[1.0e-12, 1.2e-12, 1.5e-12, 2.0e-12, 1.8e-12, 0.9e-12],
-            anisotropia_values=[0.2, 1.0, 0.9, 0.4],
-        ),
-    ]
+    # Fonte única de verdade dos materiais (compartilhada com o teste sintético).
+    materials = build_barragem_materials()
 
     seep_cfg = MultiMaterialSeepConfig(
         project_path=project_path,
@@ -116,22 +76,30 @@ def main():
     # ────────────────────────────────────────────────────────────────────────
     # ACO ROBUSTO
     # ────────────────────────────────────────────────────────────────────────
-    # Config proven no banco de testes (acerto 100% do ótimo):
-    #   n_ants=15, alpha=1.0, rho=0.2, max_iter=80.
-    # ATENÇÃO ao custo: cada formiga × iteração é uma simulação do GeoStudio.
-    #   15 × 80 = até 1200 solves (o cache reaproveita combinações repetidas).
-    # Para um teste rápido, reduza n_ants e max_iter (ex.: n_ants=8, max_iter=20).
+    # Cada formiga × iteração é UMA simulação do GeoStudio (o cache reaproveita
+    # combinações repetidas, então o nº real de solves costuma ser bem menor).
+    #
+    # Trade-off custo × acerto medido no banco de testes sintético com os 5
+    # materiais reais (~8 milhões de combinações, PIOR caso: ótimo é uma agulha
+    # com RMSE=0 exato; a superfície real da barragem é mais suave e tende a
+    # precisar de menos solves):
+    #     15 ants / 80  iter  -> 63%  acerto  (~515  solves)
+    #     25 ants / 150 iter  -> 90%  acerto  (~1048 solves)
+    #     30 ants / 250 iter  -> 100% acerto  (~1924 solves)
+    #
+    # Default abaixo = ponto equilibrado (25/150). Suba para 30/250 se quiser
+    # robustez máxima; baixe (ex.: 10/30) para um ensaio rápido.
     aco = MultiMaterialACORobust(
         material_configs=materials,
-        n_ants=15,
+        n_ants=25,
         alpha=1.0,
         zeta=2.0,
-        rho=0.2,
+        rho=0.15,
         tau_min=0.05,
         tau_max=5.0,
         ratio_cap=5.0,
         elitist=True,
-        max_iter=80,
+        max_iter=150,
         tolerancia=0.01,
         penalty_rmse=1e12,
         debug=True,

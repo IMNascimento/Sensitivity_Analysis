@@ -39,21 +39,13 @@ from aco_multi import MultiMaterialACO               # noqa: E402
 from aco_multi_v2 import MultiMaterialACOv2          # noqa: E402
 from aco_multi_robust import MultiMaterialACORobust  # noqa: E402
 from convergence_plot import plot_convergencia, plot_comparacao  # noqa: E402
+from barragem_materials import build_barragem_materials  # noqa: E402
 
 
 # ───────────────────────────────────────────────────────────────────────────
-# Mocks com a MESMA interface dos objetos reais
+# Mock APENAS do modelo (GeoStudio). A configuração de material vem da MESMA
+# fonte usada pelo main_multi_material_robust.py (barragem_materials.py).
 # ───────────────────────────────────────────────────────────────────────────
-class MockMaterialConfig:
-    def __init__(self, name, k_values, anisotropia_values):
-        self.material_name = name
-        self.material_object = f'Materials["{name}"]'
-        self.k_field_name = "KSat"
-        self.anisotropy_field_name = "KYXRatio"
-        self.k_values = list(k_values)
-        self.anisotropia_values = list(anisotropia_values)
-
-
 class _MockConfig:
     def __init__(self, use_anisotropy=True):
         self.use_anisotropy = use_anisotropy
@@ -122,20 +114,24 @@ def build_true_theta(material_configs, true_idx):
 # Cenário de teste
 # ───────────────────────────────────────────────────────────────────────────
 def make_scenario():
-    mats = [
-        MockMaterialConfig(
-            "Areia",
-            k_values=[1e-7, 5e-7, 1e-6, 5e-6, 1e-5, 5e-5],
-            anisotropia_values=[0.5, 1.0, 2.0, 5.0, 10.0],
-        ),
-        MockMaterialConfig(
-            "Argila",
-            k_values=[1e-9, 5e-9, 1e-8, 5e-8, 1e-7, 5e-7],
-            anisotropia_values=[0.5, 1.0, 2.0, 5.0, 10.0],
-        ),
-    ]
-    # Ótimo verdadeiro (índices escolhidos).
-    true_idx = {"Areia": (3, 1), "Argila": (4, 3)}
+    """
+    Usa EXATAMENTE os materiais reais da barragem (barragem_materials.py),
+    a mesma fonte do main_multi_material_robust.py. Só o modelo (GeoStudio) é
+    substituído pelo MockSeepModel.
+
+    O ótimo verdadeiro é escolhido por índice dentro do espaço de cada material
+    (idx_k em [0, n_k-1], idx_a em [0, n_a-1]). Se você mudar os materiais em
+    barragem_materials.py, esta escolha é normalizada para continuar válida.
+    """
+    mats = build_barragem_materials()
+
+    # Ótimo verdadeiro: pega um índice "do meio" dentro de cada espaço, de forma
+    # determinística e sempre dentro dos limites (robusto a mudanças no grid).
+    true_idx = {}
+    for m in mats:
+        ik = len(m.k_values) // 2
+        ia = len(m.anisotropia_values) // 2
+        true_idx[m.material_name] = (ik, ia)
     return mats, true_idx
 
 
@@ -186,10 +182,14 @@ def main():
     modelo = MockSeepModel(mats, use_anisotropy=True, seed=123)
     objetivo = RMSEObjectiveFunction(modelo.observed(theta_true), mode="nearest")
 
+    combos = 1
+    for m in mats:
+        combos *= len(m.k_values) * len(m.anisotropia_values)
     print("=" * 100)
-    print("CENÁRIO: 2 materiais, ótimo conhecido. RMSE=0 no ótimo (superfície suave).")
-    print(f"  Espaço de busca por material: {len(mats[0].k_values)} k × "
-          f"{len(mats[0].anisotropia_values)} a")
+    print(f"CENÁRIO: {len(mats)} materiais REAIS (MaterialCalibrationConfig), "
+          f"ótimo conhecido. RMSE=0 no ótimo (superfície suave).")
+    print(f"  Materiais: {', '.join(m.material_name for m in mats)}")
+    print(f"  Espaço de busca conjunto: {combos:,} combinações")
     print("=" * 100)
 
     print("\n[1] Execução única (seed=0), parâmetros equivalentes:")
@@ -200,7 +200,7 @@ def main():
                     dict(n_ants=10, rho=0.5, max_iter=50, tolerancia=-1),
                     mats, true_idx, modelo, objetivo)
     res_robust = avalia("aco_multi_robust", MultiMaterialACORobust,
-                        dict(n_ants=15, alpha=1.0, rho=0.2, max_iter=80, tolerancia=-1),
+                        dict(n_ants=25, alpha=1.0, rho=0.15, max_iter=150, tolerancia=-1),
                         mats, true_idx, modelo, objetivo)
 
     # ── Gráficos de convergência ─────────────────────────────────────────────
@@ -226,7 +226,7 @@ def main():
                 dict(n_ants=15, rho=0.5, max_iter=80, tolerancia=-1),
                 mats, true_idx, theta_true)
     taxa_acerto("aco_multi_robust", MultiMaterialACORobust,
-                dict(n_ants=15, alpha=1.0, rho=0.2, max_iter=80, tolerancia=-1),
+                dict(n_ants=25, alpha=1.0, rho=0.15, max_iter=150, tolerancia=-1),
                 mats, true_idx, theta_true)
 
     print("\n[3] Sistema de erro: 25% das simulações falham (penalidade):")
@@ -234,7 +234,7 @@ def main():
                 dict(n_ants=15, rho=0.5, max_iter=80, tolerancia=-1),
                 mats, true_idx, theta_true, fail_prob=0.25)
     taxa_acerto("aco_multi_robust", MultiMaterialACORobust,
-                dict(n_ants=15, alpha=1.0, rho=0.2, max_iter=80, tolerancia=-1),
+                dict(n_ants=25, alpha=1.0, rho=0.15, max_iter=150, tolerancia=-1),
                 mats, true_idx, theta_true, fail_prob=0.25)
     print()
 
