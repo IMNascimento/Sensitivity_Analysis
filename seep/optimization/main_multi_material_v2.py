@@ -17,10 +17,11 @@ from pathlib import Path
 
 from config import MultiMaterialSeepConfig
 from seep_model import SeepModel
-from objective_function import RMSEObjectiveFunction
+from objective_function import ErrorObjectiveFunction
 from aco_multi_v2 import MultiMaterialACOv2
 from convergence_plot import plot_convergencia
 from barragem_materials import build_barragem_materials
+from audit import gerar_auditoria
 
 from main_multi_material import (
     build_example_observed_data,
@@ -46,6 +47,7 @@ def main():
     full_output_csv_path = output_dir / "resultado_bruto_eWaterTotalHead.csv"
     sampled_points_csv_path = output_dir / "resultado_pontos_amostrados.csv"
     plot_path = output_dir / "convergencia.png"
+    audit_path = output_dir / "auditoria.md"
 
     # Fonte única de verdade dos materiais (mesma do main robusto e do teste).
     materials = build_barragem_materials()
@@ -66,9 +68,10 @@ def main():
     modelo = SeepModel(seep_cfg)
     modelo.open_project()
 
-    funcao_objetivo = RMSEObjectiveFunction(
+    funcao_objetivo = ErrorObjectiveFunction(
         observed_data,
         mode="exact",   # troque para "nearest" se quiser
+        metric="mae",   # MAE (erro absoluto médio); use "rmse" se preferir
         tolerance=1e-2,
         debug=False,
     )
@@ -113,9 +116,18 @@ def main():
     # ============================================================
     plot_convergencia(
         resultado,
-        titulo="Calibração conjunta (ACO v2 / livro) — convergência do RMSE",
+        titulo="Calibração conjunta (ACO v2 / livro) — convergência do erro",
         salvar=str(plot_path),
         mostrar=False,
+    )
+
+    # ============================================================
+    # AUDITORIA (hiperparâmetros + consenso do feromônio × melhor formiga)
+    # ============================================================
+    gerar_auditoria(
+        aco, resultado, funcao_objetivo,
+        caminho=str(audit_path),
+        titulo="Auditoria — calibração conjunta (ACO v2 / livro)",
     )
 
     # ============================================================
@@ -152,6 +164,7 @@ def main():
     print(f"CSV bruto com eWaterTotalHead salvo em: {full_output_csv_path}")
     print(f"CSV com pontos amostrados salvo em: {sampled_points_csv_path}")
     print(f"Gráfico de convergência salvo em: {plot_path}")
+    print(f"Relatório de auditoria salvo em: {audit_path}")
 
 
 if __name__ == "__main__":

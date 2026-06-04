@@ -6,7 +6,7 @@ import numpy as np
 
 from config import MultiMaterialSeepConfig, MaterialCalibrationConfig
 from seep_model import SeepModel
-from objective_function import RMSEObjectiveFunction
+from objective_function import ErrorObjectiveFunction
 from aco_multi import MultiMaterialACO
 
 
@@ -204,7 +204,7 @@ def main():
     modelo = SeepModel(seep_cfg)
     modelo.open_project()
 
-    funcao_objetivo = RMSEObjectiveFunction(
+    funcao_objetivo = ErrorObjectiveFunction(
         observed_data,
         mode="exact",   # troque para "nearest" se quiser
         tolerance=1e-2,

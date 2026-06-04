@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class RMSEObjectiveFunction:
+class ErrorObjectiveFunction:
     """
     Calcula o erro RMSE entre valores observados e valores produzidos pelo modelo.
 
@@ -55,6 +55,7 @@ class RMSEObjectiveFunction:
         observed_data: np.ndarray,
         mode: str = "nearest",
         tolerance: float = 1e-3,
+        metric: str = "rmse",
         debug: bool = False,
     ):
         """
@@ -98,10 +99,53 @@ class RMSEObjectiveFunction:
         if mode not in {"nearest", "exact"}:
             raise ValueError("mode deve ser 'nearest' ou 'exact'.")
 
+        if metric not in {"rmse", "mae"}:
+            raise ValueError("metric deve ser 'rmse' ou 'mae'.")
+
         self.observed_data = np.array(observed_data, dtype=float)
         self.mode = mode
         self.tolerance = float(tolerance)
+        self.metric = metric
         self.debug = debug
+
+    # ------------------------------------------------------------------
+    # Resíduos (observado − modelado) usando a estratégia de amostragem atual
+    # ------------------------------------------------------------------
+    def _residuos(self, model_output: np.ndarray) -> np.ndarray:
+        if model_output.ndim != 2 or model_output.shape[1] != 3:
+            raise ValueError(
+                "model_output deve ter shape (n, 3) no formato [x, y, valor_modelado]."
+            )
+        model_output = np.array(model_output, dtype=float)
+
+        if self.mode == "nearest":
+            sampled = self._sample_model_nearest(model_output)
+        else:
+            sampled = self._sample_model_exact(model_output)
+
+        observed = self.observed_data[:, 2]
+        simulated = sampled[:, 2]
+        return observed - simulated
+
+    def calcular(self, model_output: np.ndarray) -> float:
+        """
+        Calcula o erro entre observado e modelado usando a métrica configurada.
+
+        - ``metric="rmse"``: raiz do erro quadrático médio (penaliza erros grandes).
+        - ``metric="mae"``:  erro absoluto médio (robusto a outliers).
+
+        Ambas estão em unidade física (ex.: metros de carga) e valem 0 só quando
+        observado == modelado em todos os pontos. O ACO minimiza este escalar —
+        a troca de métrica não muda o algoritmo.
+        """
+        resid = self._residuos(model_output)
+        if self.metric == "mae":
+            return float(np.mean(np.abs(resid)))
+        return float(np.sqrt(np.mean(resid ** 2)))
+
+    def calcular_mae(self, model_output: np.ndarray) -> float:
+        """Erro absoluto médio (MAE), independente da métrica configurada."""
+        return float(np.mean(np.abs(self._residuos(model_output))))
 
     def calcular_rmse(self, model_output: np.ndarray) -> float:
         """

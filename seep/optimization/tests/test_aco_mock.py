@@ -8,7 +8,7 @@ rodar o GeoStudio (que é caro e lento). Usamos:
 
   - MockMaterialConfig : mesma interface dos material_configs reais.
   - MockSeepModel      : run_multi(...) devolve [x, y, valor] como o SeepModel.
-  - RMSEObjectiveFunction REAL : exercita o mesmo "sistema de erro" da produção.
+  - ErrorObjectiveFunction REAL : exercita o mesmo "sistema de erro" da produção.
 
 O modelo sintético gera o "head" em N nós como uma função LINEAR dos parâmetros
 de todos os materiais:
@@ -34,7 +34,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OPT_DIR = os.path.dirname(HERE)
 sys.path.insert(0, OPT_DIR)
 
-from objective_function import RMSEObjectiveFunction  # noqa: E402
+from objective_function import ErrorObjectiveFunction  # noqa: E402
 from aco_multi import MultiMaterialACO               # noqa: E402
 from aco_multi_v2 import MultiMaterialACOv2          # noqa: E402
 from aco_multi_robust import MultiMaterialACORobust  # noqa: E402
@@ -158,7 +158,7 @@ def taxa_acerto(nome, classe, kwargs, mats, true_idx, theta_true, n_seeds=30, fa
     acertos = 0
     for s in range(n_seeds):
         modelo = MockSeepModel(mats, use_anisotropy=True, fail_prob=fail_prob, seed=1000 + s)
-        objetivo = RMSEObjectiveFunction(modelo.observed(theta_true), mode="nearest")
+        objetivo = ErrorObjectiveFunction(modelo.observed(theta_true), mode="nearest")
         np.random.seed(s)
         aco = classe(material_configs=mats, debug=False, **kwargs)
         res = aco.otimizar(modelo, objetivo)
@@ -180,7 +180,7 @@ def main():
     theta_true = build_true_theta(mats, true_idx)
 
     modelo = MockSeepModel(mats, use_anisotropy=True, seed=123)
-    objetivo = RMSEObjectiveFunction(modelo.observed(theta_true), mode="nearest")
+    objetivo = ErrorObjectiveFunction(modelo.observed(theta_true), mode="nearest")
 
     combos = 1
     for m in mats:

@@ -21,7 +21,7 @@ OPT_DIR = os.path.dirname(HERE)
 sys.path.insert(0, OPT_DIR)
 sys.path.insert(0, HERE)
 
-from objective_function import RMSEObjectiveFunction          # noqa: E402
+from objective_function import ErrorObjectiveFunction          # noqa: E402
 from aco_multi import MultiMaterialACO                        # noqa: E402
 from aco_multi_v2 import MultiMaterialACOv2                   # noqa: E402
 from aco_multi_robust import MultiMaterialACORobust           # noqa: E402
@@ -34,7 +34,7 @@ def main():
     theta_true = T.build_true_theta(mats, true_idx)
 
     modelo = T.MockSeepModel(mats, use_anisotropy=True, seed=123)
-    objetivo = RMSEObjectiveFunction(modelo.observed(theta_true), mode="nearest")
+    objetivo = ErrorObjectiveFunction(modelo.observed(theta_true), mode="nearest")
 
     # Reexecuta as três versões (seed=0) para reconstruir os históricos.
     np.random.seed(0)
