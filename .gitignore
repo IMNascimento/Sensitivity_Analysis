@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 /seep/optimization/outputs_multi/
+/seep/optimization/outputs_multi_robust/
+
+# Gráficos de convergência gerados pelos testes (regeneráveis)
+/seep/optimization/tests/*.png
 
 # Distribution / packaging
 .Python
